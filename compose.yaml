@@ -1,0 +1,25 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+    environment:
+      - DEBUG=1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./infra/localstack/init:/etc/localstack/init/ready.d
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    # Override hostnames for in-container access to LocalStack
+    environment:
+      AWS_ENDPOINT_URL: http://localstack:4566
+      SQS_QUEUE_URL: http://localstack:4566/000000000000/eyal-cp-devops-ha-local-emails-queue
+    depends_on:
+      - localstack

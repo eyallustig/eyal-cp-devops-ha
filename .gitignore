@@ -1,0 +1,17 @@
+# Python venvs and caches
+.venv/
+__pycache__/
+*.py[cod]
+
+# Environment files
+.env
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+
+# OS files
+.DS_Store
+
+# Pyenv version file (keep if you want it tracked; currently present)
+# .python-version
