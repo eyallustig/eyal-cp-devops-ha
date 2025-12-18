@@ -11,13 +11,25 @@ services:
 
   api:
     build:
-      context: .
-      dockerfile: services/api/Dockerfile
+      context: ./services/api
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     env_file:
       - .env
     # Override hostnames for in-container access to LocalStack
+    environment:
+      AWS_ENDPOINT_URL: http://localstack:4566
+      SQS_QUEUE_URL: http://localstack:4566/000000000000/eyal-cp-devops-ha-local-emails-queue
+    depends_on:
+      - localstack
+
+  worker:
+    build:
+      context: ./services/worker
+      dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
       AWS_ENDPOINT_URL: http://localstack:4566
       SQS_QUEUE_URL: http://localstack:4566/000000000000/eyal-cp-devops-ha-local-emails-queue

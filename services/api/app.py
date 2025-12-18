@@ -9,7 +9,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from .settings import get_settings
+from settings import get_settings
 
 settings = get_settings()
 

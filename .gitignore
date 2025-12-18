@@ -13,5 +13,5 @@ __pycache__/
 # OS files
 .DS_Store
 
-# Pyenv version file (keep if you want it tracked; currently present)
-# .python-version
+# Pyenv version file
+.python-version
