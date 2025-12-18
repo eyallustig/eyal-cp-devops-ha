@@ -6,6 +6,16 @@ __pycache__/
 # Environment files
 .env
 
+# Terraform local state and cache
+**/.terraform/
+**/terraform.tfstate
+**/terraform.tfstate.*
+crash.log
+crash.*.log
+
+# Terraform backend config (contains account-specific values)
+**/backend.hcl
+
 # Python tooling caches
 .pytest_cache/
 .mypy_cache/
