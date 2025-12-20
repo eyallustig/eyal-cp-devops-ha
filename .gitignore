@@ -16,6 +16,10 @@ crash.*.log
 # Terraform backend config (contains account-specific values)
 **/backend.hcl
 
+# Terraform local variable files
+**/terraform.tfvars
+**/*.auto.tfvars
+
 # Python tooling caches
 .pytest_cache/
 .mypy_cache/
