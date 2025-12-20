@@ -64,6 +64,13 @@ resource "aws_ecs_task_definition" "this" {
   task_role_arn            = var.task_role_arn
   container_definitions    = jsonencode([local.container_definition])
   tags                     = var.tags
+
+  lifecycle {
+    precondition {
+      condition     = !var.enable_container_healthcheck || length(var.healthcheck_command) > 0
+      error_message = "healthcheck_command must be provided when enable_container_healthcheck is true."
+    }
+  }
 }
 
 resource "aws_ecs_service" "this" {
@@ -98,4 +105,16 @@ resource "aws_ecs_service" "this" {
   health_check_grace_period_seconds = var.target_group_arn != null ? var.health_check_grace_period_seconds : null
 
   tags = var.tags
+
+  lifecycle {
+    precondition {
+      condition     = var.deployment_maximum_percent >= var.deployment_minimum_healthy_percent
+      error_message = "deployment_maximum_percent must be >= deployment_minimum_healthy_percent."
+    }
+
+    precondition {
+      condition     = var.target_group_arn == null || var.container_port != null
+      error_message = "container_port must be set when target_group_arn is provided."
+    }
+  }
 }

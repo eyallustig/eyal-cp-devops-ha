@@ -107,10 +107,9 @@ variable "deployment_maximum_percent" {
   validation {
     condition = (
       var.deployment_maximum_percent >= 100 &&
-      var.deployment_maximum_percent <= 200 &&
-      var.deployment_maximum_percent >= var.deployment_minimum_healthy_percent
+      var.deployment_maximum_percent <= 200
     )
-    error_message = "deployment_maximum_percent must be between 100 and 200 and >= deployment_minimum_healthy_percent."
+    error_message = "deployment_maximum_percent must be between 100 and 200."
   }
 }
 
@@ -124,11 +123,6 @@ variable "healthcheck_command" {
   description = "Container healthcheck command list."
   type        = list(string)
   default     = []
-
-  validation {
-    condition     = var.enable_container_healthcheck ? length(var.healthcheck_command) > 0 : true
-    error_message = "healthcheck_command must be set when enable_container_healthcheck is true."
-  }
 }
 
 variable "healthcheck_interval" {
@@ -159,11 +153,6 @@ variable "target_group_arn" {
   description = "Target group ARN for optional load balancer attachment."
   type        = string
   default     = null
-
-  validation {
-    condition     = var.target_group_arn == null || var.container_port != null
-    error_message = "container_port must be set when target_group_arn is provided."
-  }
 }
 
 variable "health_check_grace_period_seconds" {
