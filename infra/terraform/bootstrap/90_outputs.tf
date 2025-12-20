@@ -13,12 +13,22 @@ output "github_oidc_provider_arn" {
   value       = module.github_oidc_provider.oidc_provider_arn
 }
 
-output "github_actions_role_arn" {
+output "github_actions_ci_role_arn" {
   description = "IAM role ARN for GitHub Actions CI."
   value       = module.github_actions_ci_role.role_arn
 }
 
-output "github_actions_role_name" {
+output "github_actions_ci_role_name" {
   description = "IAM role name for GitHub Actions CI."
   value       = module.github_actions_ci_role.role_name
+}
+
+output "github_actions_cd_role_arn" {
+  description = "IAM role ARN for GitHub Actions CD."
+  value       = module.github_actions_cd_role.role_arn
+}
+
+output "github_actions_cd_role_name" {
+  description = "IAM role name for GitHub Actions CD."
+  value       = module.github_actions_cd_role.role_name
 }
