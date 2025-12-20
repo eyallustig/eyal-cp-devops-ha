@@ -126,10 +126,19 @@ jobs:
         working-directory: infra/terraform/envs/prod/us-east-1/compute
         run: terraform validate
 
+      - name: Write ci.auto.tfvars
+        working-directory: infra/terraform/envs/prod/us-east-1/compute
+        shell: bash
+        run: |
+          cat > ci.auto.tfvars <<EOF
+          remote_state_bucket   = "${{ vars.TF_STATE_BUCKET }}"
+          data_config_state_key = "${{ vars.TF_STATE_KEY_DATA_CONFIG }}"
+          EOF
+
       - name: Terraform plan
         working-directory: infra/terraform/envs/prod/us-east-1/compute
-        run: terraform plan -out=tfplan ${{ needs.detect_changes.outputs.var_args }}
+        run: terraform plan -input=false -out=tfplan ${{ needs.detect_changes.outputs.var_args }}
 
       - name: Terraform apply
         working-directory: infra/terraform/envs/prod/us-east-1/compute
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -input=false -auto-approve tfplan
