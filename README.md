@@ -9,7 +9,7 @@ flowchart LR
   API --> SQS[SQS Queue]
   SQS --> W[Worker]
   W --> S3[S3 Bucket]
-  API --> SSM[SSM Parameter (token)]
+  API --> SSM["SSM Parameter (token)"]
 ```
 
 ## Architecture
