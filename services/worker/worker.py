@@ -4,6 +4,7 @@ import signal
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from threading import Event
 from typing import Optional
 
@@ -14,6 +15,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from settings import get_settings
 
 stop_event = Event()
+HEARTBEAT_PATH = Path("/tmp/worker_heartbeat")
 
 
 @dataclass
@@ -36,6 +38,14 @@ def _handle_stop(signum, frame):
     if ctx:
         ctx.logger.info("Received signal %s, stopping worker loop", signum)
     stop_event.set()
+
+
+def touch_heartbeat() -> None:
+    try:
+        HEARTBEAT_PATH.touch()
+    except Exception:
+        # Avoid crashing the worker if the filesystem is read-only or full.
+        pass
 
 
 def create_context():
@@ -186,6 +196,8 @@ def worker_loop(ctx: Context):
         ctx.settings.app_env,
     )
     while not stop_event.is_set():
+        touch_heartbeat()
+
         messages = receive_messages(ctx)
         if not messages:
             time.sleep(ctx.settings.sleep_on_empty_seconds)
