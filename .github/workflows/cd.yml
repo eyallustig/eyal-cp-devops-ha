@@ -1,0 +1,119 @@
+name: cd
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: cd-prod-us-east-1-compute
+  cancel-in-progress: false
+
+jobs:
+  deploy_compute:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Compute SHAs
+        id: shas
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FULL_SHA="${{ github.event.workflow_run.head_sha }}"
+          SHORT_SHA="${FULL_SHA:0:7}"
+          if git rev-parse "${FULL_SHA}^" >/dev/null 2>&1; then
+            PARENT_SHA=$(git rev-parse "${FULL_SHA}^")
+          else
+            PARENT_SHA="$FULL_SHA"
+          fi
+          IMAGE_TAG="sha-${SHORT_SHA}"
+
+          echo "full_sha=$FULL_SHA" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "parent_sha=$PARENT_SHA" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Detect changed services
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ steps.shas.outputs.parent_sha }}
+          ref: ${{ steps.shas.outputs.full_sha }}
+          filters: |
+            api:
+              - "services/api/**"
+            worker:
+              - "services/worker/**"
+
+      - name: Build Terraform var args
+        id: vars
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          var_args=""
+          if [ "${{ steps.changes.outputs.api }}" = "true" ]; then
+            var_args="$var_args -var=api_image_tag=${{ steps.shas.outputs.image_tag }}"
+          fi
+          if [ "${{ steps.changes.outputs.worker }}" = "true" ]; then
+            var_args="$var_args -var=worker_image_tag=${{ steps.shas.outputs.image_tag }}"
+          fi
+
+          if [ -n "$var_args" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "var_args=$var_args" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        if: steps.vars.outputs.has_changes == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_CD }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Write backend config
+        if: steps.vars.outputs.has_changes == 'true'
+        working-directory: infra/terraform/envs/prod/us-east-1/compute
+        shell: bash
+        run: |
+          cat > backend.hcl <<EOF
+          bucket         = "${{ vars.TF_STATE_BUCKET }}"
+          key            = "${{ vars.TF_STATE_KEY_COMPUTE }}"
+          region         = "${{ vars.AWS_REGION }}"
+          dynamodb_table = "${{ vars.TF_LOCK_TABLE }}"
+          encrypt        = true
+          EOF
+
+      - name: Terraform init
+        if: steps.vars.outputs.has_changes == 'true'
+        working-directory: infra/terraform/envs/prod/us-east-1/compute
+        run: terraform init -backend-config=backend.hcl
+
+      - name: Terraform validate
+        if: steps.vars.outputs.has_changes == 'true'
+        working-directory: infra/terraform/envs/prod/us-east-1/compute
+        run: terraform validate
+
+      - name: Terraform plan
+        if: steps.vars.outputs.has_changes == 'true'
+        working-directory: infra/terraform/envs/prod/us-east-1/compute
+        run: terraform plan -out=tfplan ${{ steps.vars.outputs.var_args }}
+
+      - name: Terraform apply
+        if: steps.vars.outputs.has_changes == 'true'
+        working-directory: infra/terraform/envs/prod/us-east-1/compute
+        run: terraform apply -auto-approve tfplan
