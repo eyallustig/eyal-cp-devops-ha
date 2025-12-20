@@ -14,9 +14,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy_compute:
+  detect_changes:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.vars.outputs.has_changes }}
+      var_args: ${{ steps.vars.outputs.var_args }}
+      image_tag: ${{ steps.shas.outputs.image_tag }}
+      full_sha: ${{ steps.shas.outputs.full_sha }}
+      parent_sha: ${{ steps.shas.outputs.parent_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,15 +84,29 @@ jobs:
 
           echo "var_args=$var_args" >> "$GITHUB_OUTPUT"
 
+  deploy_compute:
+    needs: detect_changes
+    if: needs.detect_changes.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.detect_changes.outputs.full_sha }}
+          fetch-depth: 0
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
       - name: Configure AWS credentials
-        if: steps.vars.outputs.has_changes == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_CD }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Write backend config
-        if: steps.vars.outputs.has_changes == 'true'
         working-directory: infra/terraform/envs/prod/us-east-1/compute
         shell: bash
         run: |
@@ -99,21 +119,17 @@ jobs:
           EOF
 
       - name: Terraform init
-        if: steps.vars.outputs.has_changes == 'true'
         working-directory: infra/terraform/envs/prod/us-east-1/compute
         run: terraform init -backend-config=backend.hcl
 
       - name: Terraform validate
-        if: steps.vars.outputs.has_changes == 'true'
         working-directory: infra/terraform/envs/prod/us-east-1/compute
         run: terraform validate
 
       - name: Terraform plan
-        if: steps.vars.outputs.has_changes == 'true'
         working-directory: infra/terraform/envs/prod/us-east-1/compute
-        run: terraform plan -out=tfplan ${{ steps.vars.outputs.var_args }}
+        run: terraform plan -out=tfplan ${{ needs.detect_changes.outputs.var_args }}
 
       - name: Terraform apply
-        if: steps.vars.outputs.has_changes == 'true'
         working-directory: infra/terraform/envs/prod/us-east-1/compute
         run: terraform apply -auto-approve tfplan
