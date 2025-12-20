@@ -1,0 +1,18 @@
+project     = "<PROJECT_NAME>"
+environment = "prod"
+region      = "us-east-1"
+owner       = "<OWNER>"
+extra_tags  = {}
+
+payload_noncurrent_version_expiration_days = 30
+payload_object_expiration_days             = 30
+payload_force_destroy                      = false
+
+sqs_visibility_timeout_seconds = 60
+sqs_receive_wait_time_seconds  = 20
+sqs_message_retention_seconds  = 345600
+dlq_message_retention_seconds  = 1209600
+max_receive_count              = 5
+
+token_parameter_description = "Application auth token (value set out-of-band; Terraform ignores changes)."
+token_placeholder_value     = "<CHANGEME>"

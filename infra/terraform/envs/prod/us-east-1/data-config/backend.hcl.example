@@ -1,0 +1,5 @@
+bucket         = "<STATE_BUCKET_NAME>"
+key            = "data-config/prod/us-east-1/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "<LOCK_TABLE_NAME>"
+encrypt        = true

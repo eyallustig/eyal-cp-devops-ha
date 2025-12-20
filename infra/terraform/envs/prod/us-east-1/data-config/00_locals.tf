@@ -7,7 +7,7 @@ locals {
 
   name_prefix = "${local.project}-${local.environment}"
 
-  account_id  = data.aws_caller_identity.current.account_id
+  account_id = data.aws_caller_identity.current.account_id
 
   base_tags = merge(
     {
