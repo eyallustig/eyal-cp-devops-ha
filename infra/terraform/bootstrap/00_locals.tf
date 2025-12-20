@@ -1,12 +1,10 @@
-provider "aws" {
-  region = var.region
-}
-
-module "state_backend" {
-  source = "../modules/state_backend"
-
-  backend_prefix = var.backend_prefix
+locals {
+  project        = var.project
+  environment    = var.environment
   region         = var.region
+  backend_prefix = var.backend_prefix
+  name_prefix    = var.backend_prefix
+
   tags = merge(
     {
       Project     = var.project
