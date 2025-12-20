@@ -1,0 +1,2 @@
+remote_state_bucket     = "<STATE_BUCKET_NAME>"
+data_config_state_key   = "data-config/prod/us-east-1/terraform.tfstate"
