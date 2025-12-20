@@ -28,7 +28,6 @@ flowchart LR
   - bootstrap: remote state backend + GitHub OIDC + IAM roles for CI/CD
   - data-config: S3 payload bucket, SQS queue + DLQ, SSM SecureString token parameter (placeholder value)
   - compute: ECR repos, ECS cluster/services, ALB, security groups, CloudWatch logs
-  - stacks: bootstrap at infra/terraform/bootstrap; envs at infra/terraform/envs/<env>/<region>/... (prod/us-east-1)
 
 ## Service configuration (essential env vars)
 
@@ -158,7 +157,7 @@ ECR_REPO_API/ECR_REPO_WORKER must be the repository name only (example: eyal-cp-
 
 ### CI workflow (.github/workflows/ci.yml)
 - Trigger: push to main with paths in services/api/** or services/worker/**
-- Builds and pushes images to ECR tagged sha-<shortsha>
+- Builds and pushes images to ECR tagged `sha-<SHORTSHA>`
 - Required GitHub repo variables: see the table in this section
 
 ### CD workflow (.github/workflows/cd.yml)
@@ -225,7 +224,7 @@ BUCKET=$(terraform output -raw payload_bucket_name)
 aws s3 ls "s3://${BUCKET}/" --recursive
 ```
 
-Objects are written under emails/<payload_version>/<environment>/ (defaults: emails/v1/prod/).
+Objects are written under `emails/<payload_version>/<environment>/` (defaults: `emails/v1/prod/`).
 
 ## Cleanup
 
@@ -245,7 +244,7 @@ terraform destroy
 ## Troubleshooting
 
 - Stale state lock after a canceled run: terraform force-unlock <LOCK_ID>
-- Running manually / in a fork: ensure backend.hcl and terraform.tfvars exist for the compute stack (CD generates ci.auto.tfvars at runtime and uses -input=false).
+- Running manually / in a fork: ensure backend.hcl and terraform.tfvars exist for the compute stack.
 - API returns 403 Invalid token: the SSM parameter still has the placeholder value; update it via aws ssm put-parameter
 - ECS rollout did not pick up a new image: check the ECS service deployment and task definition revision
 
